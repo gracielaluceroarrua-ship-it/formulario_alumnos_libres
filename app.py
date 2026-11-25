@@ -90,7 +90,7 @@ def enviar_a_sheets(payload: dict) -> bool:
 # ==============================================================================
 # INTERFAZ DE USUARIO
 # ==============================================================================
-st.title("🎓 Orientación para Examen Libre y Equivalencias de Inglés")
+st.title("🎓 Orientación para Examen Libre de Inglés")
 st.write(
     "Completá tus datos para conocer tu situación académica, acceder a los programas "
     "y descargar el material correspondiente."
@@ -100,7 +100,7 @@ nombre = st.text_input("Apellido y Nombre completos")
 dni = st.text_input("DNI (sin puntos)")
 email = st.text_input("Correo electrónico")
 carrera = st.selectbox(
-    "Seleccioná tu carrera / espacio curricular",
+    "Seleccioná tu carrera",
     ["Seleccionar..."] + list(CARRERAS.keys()),
 )
 
