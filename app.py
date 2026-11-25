@@ -204,7 +204,7 @@ if carrera != "Seleccionar...":
         st.caption(f"Consultas administrativas o envío de actividad inicial: {CONTACTO_CATEDRA}")
 
 st.divider()
-mesa_comentarios = st.text_input("Mesa / turno previsto o comentario breve (opcional)")
+mesa_comentarios = st.text_input("Comentario breve (opcional)")
 
 # El botón queda siempre visible al final para no desaparecer en ningún rerun
 if st.button("Registrar consulta", type="primary"):
