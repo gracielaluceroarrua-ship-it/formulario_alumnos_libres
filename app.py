@@ -4,13 +4,13 @@ import streamlit as st
 st.set_page_config(page_title="Orientación Examen Libre - Inglés", page_icon="🎓")
 
 # ==============================================================================
-# CONFIGURACIÓN DE ENLACES Y DATOS DE CÁTEDRA (Editables fácilmente aquí)
+# CONFIGURACIÓN DE ENLACES Y DATOS DE CÁTEDRA
 # ==============================================================================
-CONTACTO_CATEDRA = "inglesfmn@gmail.com"  # Reemplazar si usan otro correo oficial
+CONTACTO_CATEDRA = "inglesfmn@gmail.com"
 INFO_TRAMITE_EQUIVALENCIA = (
     "Para formalizar la equivalencia directa, debés presentar una nota junto con tu "
     "certificado internacional vigente o certificado analítico (donde conste la asignatura "
-    "aprobada) vía email a inglesfmn@gmail.com."
+    "aprobada) ante **Departamento de Alumnos / Mesa de Entradas** de la Facultad."
 )
 
 ENLACES = {
@@ -23,9 +23,6 @@ ENLACES = {
     "mat_ingles2": "https://drive.google.com/drive/folders/1OVIbO2i7onTyJxyIWcFia3juJV-NPTo4?usp=drive_link",
 }
 
-# ==============================================================================
-# MAPEO DE CARRERAS Y ESPACIOS CURRICULARES
-# ==============================================================================
 CARRERAS = {
     # --- ANUALES ---
     "Inglés para Lic. en Cs. Matemáticas (Plan 9/17)": "Anual",
@@ -67,15 +64,26 @@ ETIQUETAS_MODALIDAD = {
 
 
 def enviar_a_sheets(payload: dict) -> bool:
-    url = st.secrets.get("APPS_SCRIPT_URL", "")
+    url = st.secrets.get("APPS_SCRIPT_URL", "").strip()
     if not url:
-        st.error("Falta configurar APPS_SCRIPT_URL en Secrets.")
+        st.error("Falta configurar APPS_SCRIPT_URL en Secrets o falta reiniciar la app (Reboot).")
         return False
     try:
-        resp = requests.post(url, json=payload, timeout=10)
-        return resp.status_code == 200 and resp.json().get("status") == "ok"
+        resp = requests.post(url, json=payload, timeout=15, allow_redirects=True)
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+                if data.get("status") == "ok":
+                    return True
+                st.error(f"Apps Script devolvió un error: {data}")
+                return False
+            except ValueError:
+                st.error("Apps Script no devolvió JSON válido. Verificá que el acceso sea 'Cualquier persona'.")
+                return False
+        st.error(f"Error HTTP {resp.status_code} al conectar con Google Sheets.")
+        return False
     except Exception as e:
-        st.error(f"No se pudo registrar en la planilla: {e}")
+        st.error(f"Error de conexión con la planilla: {e}")
         return False
 
 
@@ -96,16 +104,17 @@ carrera = st.selectbox(
     ["Seleccionar..."] + list(CARRERAS.keys()),
 )
 
+clave_mod = CARRERAS.get(carrera, "")
+ruta_asignada = ""
+tiene_antecedente = "No"
+
 if carrera != "Seleccionar...":
-    clave_mod = CARRERAS[carrera]
     st.info(f"Modalidad asignada: **{ETIQUETAS_MODALIDAD[clave_mod]}**")
 
     tiene_antecedente = st.radio(
         "¿Poseés certificado internacional vigente (nivel A2 o superior) o Inglés aprobado en otra carrera universitaria?",
         ["No", "Sí"],
     )
-
-    ruta_asignada = ""
 
     if tiene_antecedente == "Sí":
         ruta_asignada = "Equivalencia directa"
@@ -119,14 +128,11 @@ if carrera != "Seleccionar...":
             "Podés adjuntar aquí tu certificado o constancia para pre-revisión (PDF, JPG, PNG)",
             type=["pdf", "jpg", "png"],
         )
-
     else:
         st.subheader("📋 Orientación y Materiales Asignados")
 
         if clave_mod == "Anual":
-            ruta_asignada = (
-                "Libre Anual (Lectura + Comunicación; 1.ª consulta tras Actividad 1)"
-            )
+            ruta_asignada = "Libre Anual (Lectura + Comunicación; 1.ª consulta tras Actividad 1)"
             st.markdown(
                 "- **Ejes evaluados:** Lectura académica y comunicación.\n"
                 "- **Régimen de consultas:** La primera consulta se otorga una vez resuelta "
@@ -136,9 +142,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés Anual)", ENLACES["mat_anual"])
 
         elif clave_mod == "Ingles_II_Mate":
-            ruta_asignada = (
-                "Libre Inglés II Prof. Matemática (Segunda parte curso anual; 1.ª consulta tras Actividad 1)"
-            )
+            ruta_asignada = "Libre Inglés II Prof. Matemática (Segunda parte curso anual; 1.ª consulta tras Actividad 1)"
             st.markdown(
                 "- **Alcance:** Corresponde a la **segunda parte** del curso anual.\n"
                 "- **Régimen de consultas:** La primera consulta se otorga una vez resuelta "
@@ -148,9 +152,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés II)", ENLACES["mat_ingles2"])
 
         elif clave_mod == "Ingles_I_Mate":
-            ruta_asignada = (
-                "Libre Inglés I Prof. Matemática (Lectura; 1.ª consulta tras Actividad 1)"
-            )
+            ruta_asignada = "Libre Inglés I Prof. Matemática (Lectura; 1.ª consulta tras Actividad 1)"
             st.markdown(
                 "- **Eje evaluado:** Lectura académica.\n"
                 "- **Régimen de consultas:** La primera consulta se otorga una vez resuelta "
@@ -160,9 +162,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés Cuatrimestral / Inglés I)", ENLACES["mat_cuatrimestral_ing1"])
 
         elif clave_mod == "Cuatrimestral":
-            ruta_asignada = (
-                "Libre Cuatrimestral (Lectura; 1.ª consulta tras Actividad 1)"
-            )
+            ruta_asignada = "Libre Cuatrimestral (Lectura; 1.ª consulta tras Actividad 1)"
             st.markdown(
                 "- **Eje evaluado:** Lectura académica.\n"
                 "- **Régimen de consultas:** La primera consulta se otorga una vez resuelta "
@@ -172,9 +172,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés Cuatrimestral / Inglés I)", ENLACES["mat_cuatrimestral_ing1"])
 
         elif clave_mod == "Vocacional_Cuatrimestral":
-            ruta_asignada = (
-                "Vocacional Cuatrimestral único (Sugerencia vocacional + Solo lectura)"
-            )
+            ruta_asignada = "Vocacional Cuatrimestral único (Sugerencia vocacional + Solo lectura)"
             st.markdown(
                 "- **Recomendación:** Presentar nota solicitando incorporación como "
                 "**alumno/a vocacional**.\n"
@@ -184,9 +182,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés Cuatrimestral / Inglés I)", ENLACES["mat_cuatrimestral_ing1"])
 
         elif clave_mod == "Vocacional_Cuatrimestral_ObrasViales":
-            ruta_asignada = (
-                "Vocacional Cuatrimestral 45 hs - Obras Viales (Sugerencia vocacional + Solo lectura)"
-            )
+            ruta_asignada = "Vocacional Cuatrimestral 45 hs - Obras Viales (Sugerencia vocacional + Solo lectura)"
             st.markdown(
                 "- **Recomendación:** Presentar nota solicitando incorporación como "
                 "**alumno/a vocacional**.\n"
@@ -196,9 +192,7 @@ if carrera != "Seleccionar...":
             st.link_button("📂 Carpeta de Material (Inglés Cuatrimestral / Inglés I)", ENLACES["mat_cuatrimestral_ing1"])
 
         elif clave_mod == "Vocacional_Anual":
-            ruta_asignada = (
-                "Vocacional Anual - Fotografía (Sugerencia vocacional + Material completo)"
-            )
+            ruta_asignada = "Vocacional Anual - Fotografía (Sugerencia vocacional + Material completo)"
             st.markdown(
                 "- **Recomendación:** Presentar nota solicitando incorporación como "
                 "**alumno/a vocacional**.\n"
@@ -209,16 +203,17 @@ if carrera != "Seleccionar...":
 
         st.caption(f"Consultas administrativas o envío de actividad inicial: {CONTACTO_CATEDRA}")
 
-    mesa_comentarios = st.text_input(
-        "Mesa / turno previsto o comentario breve (opcional)"
-    )
+st.divider()
+mesa_comentarios = st.text_input("Mesa / turno previsto o comentario breve (opcional)")
 
-    if st.button("Registrar consulta"):
-        if not (nombre.strip() and dni.strip() and email.strip()):
-            st.warning(
-                "Completá Apellido y Nombre, DNI y correo electrónico antes de registrar."
-            )
-        else:
+# El botón queda siempre visible al final para no desaparecer en ningún rerun
+if st.button("Registrar consulta", type="primary"):
+    if carrera == "Seleccionar...":
+        st.warning("Por favor, seleccioná primero tu carrera / espacio curricular.")
+    elif not (nombre.strip() and dni.strip() and email.strip()):
+        st.warning("Completá Apellido y Nombre, DNI y correo electrónico antes de registrar.")
+    else:
+        with st.spinner("Registrando en la planilla..."):
             datos = {
                 "nombre": nombre.strip(),
                 "dni": dni.strip(),
@@ -230,6 +225,4 @@ if carrera != "Seleccionar...":
                 "mesa_comentarios": mesa_comentarios.strip(),
             }
             if enviar_a_sheets(datos):
-                st.success(
-                    "¡Consulta registrada! Ya podés acceder a los enlaces de arriba."
-                )
+                st.success("✅ ¡Consulta registrada en la planilla correctamente!")
