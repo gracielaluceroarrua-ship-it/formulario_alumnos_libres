@@ -4,6 +4,31 @@ import streamlit as st
 st.set_page_config(page_title="Orientación Examen Libre - Inglés", page_icon="🎓")
 
 # ==============================================================================
+# BLOQUEO TEMPORAL PARA PRUEBAS (Se desactiva borrando CLAVE_PRUEBA en Secrets)
+# ==============================================================================
+clave_esperada = str(st.secrets.get("CLAVE_PRUEBA", "")).strip()
+
+if clave_esperada:
+    if "acceso_autorizado_libre" not in st.session_state:
+        st.session_state.acceso_autorizado_libre = False
+
+    if not st.session_state.acceso_autorizado_libre:
+        st.title("🔒 Acceso restringido — Modo prueba")
+        st.info("Este formulario se encuentra en etapa de revisión interna por el equipo docente.")
+        with st.form("form_clave_prueba_libre"):
+            clave_ingresada = st.text_input("Ingresá la clave de acceso:", type="password")
+            entrar = st.form_submit_button("Ingresar")
+
+        if entrar:
+            if clave_ingresada.strip() == clave_esperada:
+                st.session_state.acceso_autorizado_libre = True
+                st.rerun()
+            else:
+                st.error("Clave incorrecta.")
+        st.stop()
+# ==============================================================================
+
+# ==============================================================================
 # CONFIGURACIÓN DE ENLACES Y DATOS DE CÁTEDRA
 # ==============================================================================
 CONTACTO_CATEDRA = "inglesfmn@gmail.com"
@@ -64,7 +89,7 @@ ETIQUETAS_MODALIDAD = {
 
 
 def enviar_a_sheets(payload: dict) -> bool:
-    url = st.secrets.get("APPS_SCRIPT_URL", "").strip()
+    url = str(st.secrets.get("APPS_SCRIPT_URL", "")).strip()
     if not url:
         st.error("Falta configurar APPS_SCRIPT_URL en Secrets o falta reiniciar la app (Reboot).")
         return False
@@ -206,7 +231,6 @@ if carrera != "Seleccionar...":
 st.divider()
 mesa_comentarios = st.text_input("Comentario breve (opcional)")
 
-# El botón queda siempre visible al final para no desaparecer en ningún rerun
 if st.button("Registrar consulta", type="primary"):
     if carrera == "Seleccionar...":
         st.warning("Por favor, seleccioná primero tu carrera / espacio curricular.")
